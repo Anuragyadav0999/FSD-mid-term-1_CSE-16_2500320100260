@@ -1,38 +1,137 @@
-const express = require('express');
+import express from 'express';
 
 const app = express();
+const PORT = 3000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+let students = [];
+
+// TASK 1: Create Express Server
 
 app.get('/', (req, res) => {
-    res.send("Server is running");
+    res.send("Welcome to Node.js and Express.js!");
 });
 
-app.post('/api/students', (req, res) => {
+// TASK 2: POST API - Add Student
 
+app.post('/students', (req, res) => {
     const { id, name, email, course, age } = req.body;
 
-    if (!id || !name || !email || !course || !age) {
+    if (
+        id === undefined || id === null || id === '' ||
+        !name || !email || !course ||
+        age === undefined || age === null || age === ''
+    ) {
         return res.status(400).json({
-            message: "All fields are required"
+            message: "All fields are mandatory"
         });
     }
 
-    const student = {
-        id,
-        name,
-        email,
-        course,
-        age
-    };
+    const existingStudent = students.find(
+        student => String(student.id) === String(id)
+    );
+
+    if (existingStudent) {
+        return res.status(409).json({
+            message: "Student ID already exists"
+        });
+    }
+
+    const newStudent = { id, name, email, course, age };
+
+    students.push(newStudent);
 
     res.status(201).json({
-        message: "Student created successfully",
-        student: student
+        message: "Student added successfully!",
+        student: newStudent
     });
-
 });
 
-app.listen(3000, () => {
-    console.log("Server running on port 3000");
-}); 
+// TASK 3: GET API - Retrieve All Students
+
+app.get('/students', (req, res) => {
+    res.status(200).json({
+        message: "All students retrieved successfully",
+        students: students
+    });
+});
+
+// GET API - Retrieve Student By ID
+
+app.get('/students/:id', (req, res) => {
+    const studentId = req.params.id;
+
+    const student = students.find(
+        student => String(student.id) === studentId
+    );
+
+    if (!student) {
+        return res.status(404).json({
+            message: "Student not found"
+        });
+    }
+
+    res.status(200).json({
+        message: "Student retrieved successfully",
+        student: student
+    });
+});
+
+// TASK 4: PUT API - Update Student
+
+app.put('/students/:id', (req, res) => {
+    const studentId = req.params.id;
+
+    const student = students.find(
+        student => String(student.id) === studentId
+    );
+
+    if (!student) {
+        return res.status(404).json({
+            message: "Student not found"
+        });
+    }
+
+    const { name, email, course, age } = req.body;
+
+    student.name = name;
+    student.email = email;
+    student.course = course;
+    student.age = age;
+
+    res.status(200).json({
+        message: "Student updated successfully!",
+        student: student
+    });
+});
+
+// TASK 5: DELETE API - Delete Student
+
+app.delete('/students/:id', (req, res) => {
+    const studentId = req.params.id;
+
+    const studentIndex = students.findIndex(
+        student => String(student.id) === studentId
+    );
+
+    if (studentIndex === -1) {
+        return res.status(404).json({
+            message: "Student not found"
+        });
+    }
+
+    const deletedStudent = students.splice(studentIndex, 1);
+
+    res.status(200).json({
+        message: "Student deleted successfully!",
+        student: deletedStudent[0]
+    });
+});
+
+// Start Server
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
